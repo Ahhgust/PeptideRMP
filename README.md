@@ -1,6 +1,10 @@
 # Peptide RMP
 
 The code herein can be used to estimate the [random match probability](https://en.wikipedia.org/wiki/Random_match_possibility) (RMP) of set of peptides detected by [liquid chromatography tandem mass spectrometry](https://en.wikipedia.org/wiki/Liquid_chromatography%E2%80%93mass_spectrometry) (LC-MS/MS).
+## Quick start
+
+...
+
 <br><br>
 As a refresher, the RMP is used to quantify the rarity of a set of genetic markers. In modern parlance *genetic* is often conflated/equated with/to DNA, but the meaning of genetic instead relates to heredity (this make sense as genetics as a discipline existed long before the discovery of DNA). In fact, some of the earliest studies in (forensic) population genetics did not use DNA markers, but instead were based on allozyme variation. Given this, it is not surprising that peptide markers can be used in forensics, but the *how* is an open question.
 
@@ -26,6 +30,7 @@ Further, alleles between chromosomes are assumed to be independent and alleles w
 1. **Partition alleles by chromosome.** After which the RMP is assessed at the level of the chromosome (that is, within chromosomes), similar to approaches used with Y chromosome and mitochondrial markers. Products of the RMP (within chromosomes) is taken to yield the final genomic RMP.
 2. **Find consistent diplotypes.** Within each chromosome, all pairs of haploid chromosomes that may have yielded the set of observed peptides are found. These are termed the consistent diplotypes, which are constrained to the loci associated with the markers detected.
 3. **Estimate the RMPs.** RMPs are estimated based on the consistent diplotypes. As there are many such diplotypes (and many RMPs), the maximum RMP is chosen as the final estimator to ensure that the method is conservative. RMPs are assessed using a *&Theta;* correction  (computed *de novo* as F<sub>ST</sub>) and considering a minumum allele frequency of 5/2*n* (*n* is the diploid sample size).
-<br>
-<br>
-The chromosomes used for comparison in practice come from the [1000 genomes project](ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/). The haploid chromosomes characterized by the project are then converted into proteins using [bcftools csq](https://samtools.github.io/bcftools/bcftools.html#csq). F<sub>ST</sub> is estimated within Europeans populations as found in the 1000 genomes project. 
+ 
+# In practice
+
+The chromosomes used for comparison in practice come from the [1000 genomes project](https://www.internationalgenome.org/category/vcf/). The haploid chromosomes characterized by the project are then converted into proteins using [bcftools csq](https://samtools.github.io/bcftools/bcftools.html#csq) and all pairs of haploid chromosomes are used in the assessment of the RMP. F<sub>ST</sub> is estimated within European populations as found in the 1000 genomes project. 
