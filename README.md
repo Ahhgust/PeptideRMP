@@ -25,5 +25,7 @@ First, assume that the peptides detected are:
 Further, alleles between chromosomes are assumed to be independent and alleles within the same chromosome are permitted any level of dependence. Given this, the code will:
 1. **Partition alleles by chromosome.** After which the RMP is assessed at the level of the chromosome (that is, within chromosomes), similar to approaches used with Y chromosome and mitochondrial markers. Products of the RMP (within chromosomes) is taken to yield the final genomic RMP.
 2. **Find consistent diplotypes.** Within each chromosome, all pairs of haploid chromosomes that may have yielded the set of observed peptides are found. These are termed the consistent diplotypes, which are constrained to the loci associated with the markers detected.
-3. **Estimate the RMPs.** RMPs are estimated based on the consistent diplotypes. As there are many such diplotypes (and many RMPs), the maximum RMP is chosen as the final estimator to ensure that the method is conservative. RMPs are assessed using the *&Theta;* correction and considering a minumum allele frequency of *5/2n* (*n* is the diploid sample size).
-
+3. **Estimate the RMPs.** RMPs are estimated based on the consistent diplotypes. As there are many such diplotypes (and many RMPs), the maximum RMP is chosen as the final estimator to ensure that the method is conservative. RMPs are assessed using a *&Theta;* correction  (computed *de novo* as F<sub>ST</sub>) and considering a minumum allele frequency of 5/2*n* (*n* is the diploid sample size).
+<br>
+<br>
+The chromosomes used for comparison in practice come from the [1000 genomes project](ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/). The haploid chromosomes characterized by the project are then converted into proteins using [bcftools csq](https://samtools.github.io/bcftools/bcftools.html#csq). F<sub>ST</sub> is estimated within Europeans populations as found in the 1000 genomes project. 
