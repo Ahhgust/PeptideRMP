@@ -17,6 +17,13 @@ Some problems that we need to consider:
 
 The basic idea of the RMP approach herein is as follows: 
 <br><br>
-First, assume that the peptides detected are: autosomal (no sex chromosomes , single-copy
+First, assume that the peptides detected are:
+* autosomal (no sex chromosomes)
+* single-copy (a given peptide can only stem from a single locus in the genome)
+* mostly correct (a low rate of false discovery)
+<br><br>
+Further, alleles between chromosomes are assumed to be independent and alleles within the same chromosome are permitted any level of dependence. Given this, the code will:
+1. **Partition alleles by chromosome.** After which the RMP is assessed at the level of the chromosome (that is, within chromosomes), similar to approaches used with Y chromosome and mitochondrial markers. Products of the RMP (within chromosomes) is taken to yield the final genomic RMP.
+2. **Find consistent diplotypes.** Within each chromosome, all pairs of haploid chromosomes that may have yielded the set of observed peptides are found. These are termed the consistent diplotypes, which are constrained to the loci associated with the markers detected.
+3. **Estimate the RMPs.** RMPs are estimated based on the consistent diplotypes. As there are many such diplotypes (and many RMPs), the maximum RMP is chosen as the final estimator to ensure that the method is conservative. RMPs are assessed using the *&Theta;* correction and considering a minumum allele frequency of *5/2n* (*n* is the diploid sample size).
 
-1. 
