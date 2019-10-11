@@ -31,12 +31,18 @@ Extra columns are okay! <br>
 
 **But**, make sure you specify the column-names exactly... any typo there will break things.
 <br>
-Also, pay attention to any warning messages; peptides that were not found will be explicitly presented. The RMP calculator will treat these alleles as being at frequency 5/2n; in fact the whole chromosome will be at this frequency. Several things can cause an allele to fail to be detected in exome sequencing (inaccessible to the array capture is one of them). In general, I recommend you constrain yourself to alleles that have been detected; this can be done with the -i flag to the program. E.g., adding -i -i AGGSYGFGGAR,ALETLQER would ignore these two alleles (equivalent to deleting them from the panel file)
+Also, pay attention to any warning messages; peptides that were not found will be explicitly presented. The RMP calculator will treat these alleles as being at frequency 5/2n; in fact the whole chromosome will be at this frequency. Several things can cause an allele to fail to be detected in exome sequencing (inaccessible to the array capture is one of them). In general, I recommend you constrain yourself to alleles that have been detected; this can be done with the -i flag to the program. E.g., adding -i AGGSYGFGGAR,ALETLQER would ignore these two alleles (equivalent to deleting them from the panel file)
 <br>
 
 Example usage:
 > ./gvp2null.py -g gvpPanel.tsv -c AllProteinCodingConsequences.txt.gz -p Homo_sapiens.GRCh37.pep.all.fa.gz -i AGGSYGFGGAR,ALETLQER,GTVEPQLEAR | gzip -9 > protConsequences.tsv.gz
 <br>
+
+The file that's created will have:
+| ID  |    Chromosome  |    ProteinID   |    ProteinStart  |  ProteinStop  |   DetectableAllele1   |    DetectableAllele2    |   InferredAllele1  |  InferredAllele2 |
+| HG00096 | 18  |    ENSP00000257198 | 91 |     101   |  SFSLFLSDGQR  |   SFSLFLSDGQR |    KSFSIFLSDGQR |   KSFSIFLSDGQR |
+| HG00100 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  SFSLFLSDGQR  |   KSFSIFLSDGQR  |  KSFSIFLSDGQR |
+| HG00101 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  nd  |    KSFSIFLSDGQR |   KSFFIFLSDGQR |
 
 
 
