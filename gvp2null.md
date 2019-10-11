@@ -38,13 +38,17 @@ Example usage:
 > ./gvp2null.py -g gvpPanel.tsv -c AllProteinCodingConsequences.txt.gz -p Homo_sapiens.GRCh37.pep.all.fa.gz -i AGGSYGFGGAR,ALETLQER,GTVEPQLEAR | gzip -9 > protConsequences.tsv.gz
 
 
-The file that's created will have
+If you:
+> zcat protConsequences.tsv | head -n 4
+
+It will look like:
 
 | ID    |  Chromosome  | ProteinID | ProteinStart  |  ProteinStop  |   DetectableAllele1 |  DetectableAllele2 | InferredAllele1 |  InferredAllele2   |
 | :---: | :---------:  | :------:  | :-----------: |  :----------: |   :---------------: |  :---------------: | :-------------: |  :------------:    |
 | HG00096 | 18  |    ENSP00000257198 | 91 |     101   |  SFSLFLSDGQR  |   SFSLFLSDGQR |    KSFSIFLSDGQR |   KSFSIFLSDGQR |
 | HG00100 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  SFSLFLSDGQR  |   KSFSIFLSDGQR  |  KSFSIFLSDGQR |
 | HG00101 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  nd  |    KSFSIFLSDGQR |   KSFFIFLSDGQR |
+
 
 <br><br>
 Where ID is the Sample ID (from the 1000 genomes project), next is the protein and the protein coordinates, and the two alleles in this individual.
