@@ -14,7 +14,7 @@ Any and all files provided (canned data) are generated using Ensembl v85, GRCh37
 ###
 For input:
 - The predicted protein products from some exome/genome sequencing project. Only [bcftools csq](https://samtools.github.io/bcftools/bcftools.html#csq) (version 1.9-197-g4e51a29) is supported, though more recent versions likely work.
-- The protein sequences themselves as provided by ensembl. E.g., <a href="ftp://ftp.ensembl.org/pub/grch37/release-85/fasta/homo_sapiens/pep/Homo_sapiens.GRCh37.pep.all.fa.gz">Homo_sapiens.GRCh37.pep.all.fa.gz</a> (v85)
+- The protein sequences themselves as provided by ensembl. E.g., Homo_sapiens.GRCh37.pep.all.fa.gz, the v85 file is found here: ftp://ftp.ensembl.org/pub/grch37/release-85/fasta/homo_sapiens/pep/Homo_sapiens.GRCh37.pep.all.fa.gz
 <br>
 
 <a href="ftp://ftp.example.com">link description</a>
