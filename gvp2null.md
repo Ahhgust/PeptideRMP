@@ -36,11 +36,12 @@ Also, pay attention to any warning messages; peptides that were not found will b
 
 Example usage:
 > ./gvp2null.py -g gvpPanel.tsv -c AllProteinCodingConsequences.txt.gz -p Homo_sapiens.GRCh37.pep.all.fa.gz -i AGGSYGFGGAR,ALETLQER,GTVEPQLEAR | gzip -9 > protConsequences.tsv.gz
-<br>
 
-The file that's created will have:
-| ID    |  Chromosome  | ProteinID | ProteinStart  |  ProteinStop  |   DetectableAllele1 |  DetectableAllele2 | InferredAllele1  |  InferredAllele2 |
-| :---: | :---------:  | :------:  | :-----------: |  :----------: |   :---------------: |  :---------------: |  :-------------: |  :------------:    |
+
+The file that's created will have
+
+| ID    |  Chromosome  | ProteinID | ProteinStart  |  ProteinStop  |   DetectableAllele1 |  DetectableAllele2 | InferredAllele1 |  InferredAllele2   |
+| :---: | :---------:  | :------:  | :-----------: |  :----------: |   :---------------: |  :---------------: | :-------------: |  :------------:    |
 | HG00096 | 18  |    ENSP00000257198 | 91 |     101   |  SFSLFLSDGQR  |   SFSLFLSDGQR |    KSFSIFLSDGQR |   KSFSIFLSDGQR |
 | HG00100 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  SFSLFLSDGQR  |   KSFSIFLSDGQR  |  KSFSIFLSDGQR |
 | HG00101 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  nd  |    KSFSIFLSDGQR |   KSFFIFLSDGQR |
