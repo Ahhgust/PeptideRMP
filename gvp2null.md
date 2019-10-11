@@ -28,6 +28,17 @@ For input:
 Notes on the gvp file:
 The column order is arbitrary (whatever order you like)<br>
 Extra columns are okay! <br>
-*But*, make sure you specify the column-names exactly... any typo there will break things.
+
+**But**, make sure you specify the column-names exactly... any typo there will break things.
+<br>
+Also, pay attention to any warning messages; peptides that were not found will be explicitly presented. The RMP calculator will treat these alleles as being at frequency 5/2n; in fact the whole chromosome will be at this frequency. Several things can cause an allele to fail to be detected in exome sequencing (inaccessible to the array capture is one of them). In general, I recommend you constrain yourself to alleles that have been detected; this can be done with the -i flag to the program. E.g., adding -i -i AGGSYGFGGAR,ALETLQER would ignore these two alleles (equivalent to deleting them from the panel file)
+<br>
+
+Example usage:
+> ./gvp2null.py -g gvpPanel.tsv -c AllProteinCodingConsequences.txt.gz -p Homo_sapiens.GRCh37.pep.all.fa.gz -i AGGSYGFGGAR,ALETLQER,GTVEPQLEAR | gzip -9 > protConsequences.tsv.gz
+<br>
+
+
+
 
 
