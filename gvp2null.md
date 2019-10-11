@@ -46,6 +46,16 @@ The file that's created will have
 | HG00100 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  SFSLFLSDGQR  |   KSFSIFLSDGQR  |  KSFSIFLSDGQR |
 | HG00101 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  nd  |    KSFSIFLSDGQR |   KSFFIFLSDGQR |
 
+<br><br>
+Where ID is the Sample ID (from the 1000 genomes project), next is the protein and the protein coordinates, and the two alleles in this individual.
+Detected alleles are found by substring search (are invariant to how indels are encoded, which can impact the coordinates of the peptide)
+The two alleles are *phased*. I.e., the left-allele is, for example, the maternal, and the right is the paternal (or vice versa).
+Sometimes an allele isn't detected; Rather, none of the alleles at a given locus are detected. This becomes "nd" (non-detects).
+The allele sequence (including the base-prior) based on the protein coordinates is given as well; this is the inferred allele. Thus we can see that
+indivual HG00101 has a nd for their (say) paternal allele; looking at the InferredAllele2 for this individual we can see that there's a KSFF instead of a KSFS prefix to the peptide, which indeed would cause the allele to fail to be detected.
+
+
+
 
 
 
