@@ -21,12 +21,13 @@ For input:
 | :----------------: | :---------: | :--:  | :-: | :--------: |
 | ENSP00000257198    | AASSQTPTMCTTTVTIK  |  445  |   461  | 18 |
 | ENSP00000257198    | AASSQTPTMCTTTVTVK  |      445  |   461 | 18 |
-| ENSP00000381072    | ADFSGMSAEK  |      297  |   306  |   
-| ENSP00000381072    | ADFSGMSTEK  |     297   |  306   | 
+| ENSP00000381072    | ADFSGMSAEK  |      297  |   306  |   18 |
+| ENSP00000381072    | ADFSGMSTEK  |     297   |  306   | 18 |
 
 <br>
 Notes on the gvp file:
 The column order is arbitrary (whatever order you like)<br>
-Extra columns are okay!
+Extra columns are okay! <br>
+*But*, make sure you specify the column-names exactly... any typo there will break things.
 
 
