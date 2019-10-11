@@ -58,6 +58,11 @@ Sometimes an allele isn't detected; Rather, none of the alleles at a given locus
 The allele sequence (including the base-prior) based on the protein coordinates is given as well; this is the inferred allele. Thus we can see that
 indivual HG00101 has a nd for their (say) paternal allele; looking at the InferredAllele2 for this individual we can see that there's a KSFF instead of a KSFS prefix to the peptide, which indeed would cause the allele to fail to be detected.
 
+<br>
+Special notes:
+The detectable alleles are represented in a 19-amino acid alphabet (I -> L), while the original alphabet is shown in the Inferred Allele.
+There is also a trypsin bias with the approach; the preceding amino acid of a detected allele must be an R or a K. i.e., the approach assumes a trypsin digest.
+Future iterations will make this more flexible...
 
 
 
