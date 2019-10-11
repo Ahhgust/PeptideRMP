@@ -17,6 +17,8 @@ For input:
 - The protein sequences themselves as provided by ensembl. E.g., <a href="ftp://ftp.ensembl.org/pub/grch37/release-85/fasta/homo_sapiens/pep/Homo_sapiens.GRCh37.pep.all.fa.gz">Homo_sapiens.GRCh37.pep.all.fa.gz</a> (v85)
 <br>
 
+<a href="ftp://ftp.example.com">link description</a>
+
 A gvp panel file. This file describes which peptide alleles are found where...
 
 
