@@ -64,7 +64,10 @@ The detectable alleles are represented in a 19-amino acid alphabet (I -> L), whi
 There is also a trypsin bias with the approach; the preceding amino acid of a detected allele must be an R or a K. i.e., the approach assumes a trypsin digest.
 Future iterations will make this more flexible...
 
+<br>
+As always, if you encounter a bug, contact me!
 
+august DOT woerner AT unthsc DOT edu
 
 
 
