@@ -6,6 +6,8 @@ The code herein can be used to estimate the [random match probability](https://e
 As a refresher, the RMP is used to quantify the rarity of a set of genetic markers. In modern parlance *genetic* is often conflated/equated with/to DNA, but the meaning of genetic instead relates to heredity (this make sense as genetics as a discipline existed long before the discovery of DNA). In fact, some of the earliest studies in (forensic) population genetics did not use DNA markers, but instead were based on allozyme variation. Given this, it is not surprising that peptide markers can be used in forensics, but the *how* is an open question.
 
 ## Quick start
+[generate a null distribution of rmps](gvp2null.md)
+
 
 To compute RMPs you will need:
 * A null distribution of RMPs. This can be computed by the script *gvp2null.py* using, for example, data from the [1000 genomes project](https://www.internationalgenome.org/category/vcf/) that has been run through [bcftools csq](https://samtools.github.io/bcftools/bcftools.html#csq) to generate the predicted protein changing polymorphisms for all individuals.
