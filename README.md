@@ -9,6 +9,7 @@ As a refresher, the RMP is used to quantify the rarity of a set of genetic marke
 [generate a null distribution of rmps](gvp2null.md)
 
 
+
 To compute RMPs you will need:
 * A null distribution of RMPs. This can be computed by the script *gvp2null.py* using, for example, data from the [1000 genomes project](https://www.internationalgenome.org/category/vcf/) that has been run through [bcftools csq](https://samtools.github.io/bcftools/bcftools.html#csq) to generate the predicted protein changing polymorphisms for all individuals.
 * A set of peptide alleles detected by LC-MS/MS
