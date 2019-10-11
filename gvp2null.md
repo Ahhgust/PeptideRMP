@@ -39,7 +39,8 @@ Example usage:
 <br>
 
 The file that's created will have:
-| ID  |    Chromosome  |    ProteinID   |    ProteinStart  |  ProteinStop  |   DetectableAllele1   |    DetectableAllele2    |   InferredAllele1  |  InferredAllele2 |
+| ID    |  Chromosome  | ProteinID | ProteinStart  |  ProteinStop  |   DetectableAllele1 |  DetectableAllele2 | InferredAllele1  |  InferredAllele2 |
+| :---: | :---------:  | :------:  | :-----------: |  :----------: |   :---------------: |  :---------------: |  :-------------: |  :------------:    |
 | HG00096 | 18  |    ENSP00000257198 | 91 |     101   |  SFSLFLSDGQR  |   SFSLFLSDGQR |    KSFSIFLSDGQR |   KSFSIFLSDGQR |
 | HG00100 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  SFSLFLSDGQR  |   KSFSIFLSDGQR  |  KSFSIFLSDGQR |
 | HG00101 | 18  |    ENSP00000257198 | 91  |    101   |  SFSLFLSDGQR   |  nd  |    KSFSIFLSDGQR |   KSFFIFLSDGQR |
