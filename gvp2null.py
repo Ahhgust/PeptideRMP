@@ -1,7 +1,32 @@
 #!/usr/bin/python3
 # Written by August Woerner
-# This program parses the results of bcftools csq
-# and it generates a tsv of peptide alleles
+# This program is designed to take in
+# a peptide alleles, and generate
+# a table of which individuals have these alleles.
+# It was designed to work on Ensembl annotations
+# in conjunction with the output of bcftools csq
+#
+# This table serves as a substrate for down-stream
+# popgen statistics (RMPs, Fst).
+# To perform the calculation I need to know
+# the peptide allele(s): (SFSLFLSDGQR)
+# which protein it came from: (ENSP00000257198)
+# the reference coordinates 1-based, inclusive: (91      101) 
+# and the chromosome: (I may ditch this later, as it's derivable from the protein ID)
+#
+# This program will group the alleles into loci, and infer the predicted peptide
+# sequence for each haploid individual (as presented by bcftools csq)
+#
+# From this I will generate a table of peptide calls
+# each row will represent a phased diploid individual's predicted peptide sequence
+# Thus the two columns of peptide sequencing calls will, say, represent the maternal (first column)
+# and paternal (subsequent column) peptide calls under the assumption that all of the genes
+# are turned ON in this individual.
+#
+# CUrrent limitations:
+# ONly autosomal calls are supported
+# Only BCFtools csq is supported
+# Only Ensembl annotations are supported
 
 
 
@@ -13,6 +38,11 @@ import glob
 from collections import namedtuple, defaultdict
 import argparse
 
+
+
+#protFile = "Homo_sapiens.GRCh37.pep.all.fa.gz"
+#gvpPanelFile = "gvpPanel.tsv"
+#csqFile = 'ProteinPredictions/AllSimpleConsequences.txt.gz'
 
 protCol = "ensembl_protein_id"
 peptideCol = 'peptide_seq'
@@ -452,7 +482,6 @@ def makeLoci(alleles):
     listOfTups.append( tuple( newList ) )
     i = j
 
-  
   return listOfTups
 
 
@@ -566,6 +595,7 @@ def digest(s, asList=False):
 
   listOfLists = []
   l = []
+
   for c in s:
     if c == 'I':
       l.append("L")
@@ -578,7 +608,9 @@ def digest(s, asList=False):
       else:
         listOfLists.append( "".join(l) )
         l = []
-        
+
+  if len(l):
+    listOfLists.append(l)
 
   if asList == False:
     return "".join(l)
@@ -626,7 +658,7 @@ def getRefAllele(allele, protein, basePrior=False):
     return list(protein[(allele.protStart-1):allele.protStop])
 
   # doubtful if this can occur; first AA is encoded as Methionine in Ensembl
-  # this is not actually part of the peptide.
+  # this may not be actually part of the peptide.
   return list(protein[allele.protStart:allele.protStop])
 
 
@@ -692,7 +724,8 @@ def getPeptideHaps(proteinHaps, alleles, refSeq, proteinSeq):
   refAsString = "".join(refSeq)
   
   uniqueHaps = {}
-  
+
+  errs = 0
   for sample, diffs in proteinHaps.items():
 
     locus = []
@@ -714,12 +747,21 @@ def getPeptideHaps(proteinHaps, alleles, refSeq, proteinSeq):
     elif len(matches) == 1:
       allele = matches[0]
     else:
-      print("Should never happen.", "The peptides you seek are not distinct!", matches, alleles, sep="\n", file=sys.stderr)
-      allele = alleles[0]
+      errs += 1
+      if errs == 1:
+        print("Should never happen.", sample, "The peptides at locus", alleles[1:] , "are problematic-- alleles within a locus should be mutually exclusive, these are not!E.g.,", haplotype, sep="\n", file=sys.stderr)
+      # called as a null allele...
+      # but added a separate tag
+      badAllele= Allele( alleles[0][0], alleles[0][1], alleles[0][2], "notdistinct", alleles[0][4])
+      allele = badAllele
 
     x = alleles[0].protStart
     y = alleles[0].protStop
 
+    # needed when grabbing the first peptide!
+    if x < 1:
+      x = 1
+    
     variant = ""
     if x >= len(hapAsList): # variant is strictly AFTER any sequence in this peptide
       variant = ""
@@ -995,13 +1037,13 @@ def main(argv):
   
 
       prot2chrom[prot] =  row["chromosome"] 
+      # This assumes a complete digest... lets make it more general
+      #peptides = digest(peptide, asList=True)
+      #if len(peptides) > 1:
+        #print("Digest failed with: " , peptide, peptides, file=sys.stderr, sep="\n")
+        #return 1
       
-      peptides = digest(peptide, asList=True)
-      if len(peptides) > 1:
-        print("Digest failed with: " , peptide, peptides, file=sys.stderr, sep="\n")
-        return 1
-        
-      al = Allele(prot, start, stop, peptides[0], peptide)
+      al = Allele(prot, start, stop, isoleucine2leucine(peptide), peptide)
       d[prot].append(al)
 
 
@@ -1019,11 +1061,8 @@ def main(argv):
       marginalAlleleCounts[ a.seq ] = 0
     d[prot] = makeLoci(alleles)
     for loc in d[prot]:
-  #    prevAllele=None
       for allele in loc[1:]: # +1 to put it back into 1-based inclusive indexing (as per the input)
-#        if prevAllele is None or prevAllele.protStop != allele.protStop:
         print(prot, loc[0].protStart, loc[0].protStop, allele.protStart+1, allele.protStop, allele.seq, sep="\t", file=lut)
- #         prevAllele = allele
 
   lut.close()
   segsiteDict = {}
@@ -1056,6 +1095,7 @@ def main(argv):
   
     if prot in haps:
       for locus in loci:
+        
         refSeq = getRefAllele(locus[0], protSeq, True)
         peptides = getPeptideHaps( haps[prot], locus, refSeq, protSeq)
         refAllele = getConsistentAllele(locus, refSeq)
@@ -1084,14 +1124,14 @@ def main(argv):
             pAllele = peptides[  ID + "_2" ] # and paternal allele
           else:
             pAllele = (refSeq, refAllele)
-
+            
           if pAllele[1].seq == 'null':
             alleles[2] = "nd"
           else:
             alleles[2] = pAllele[1].seq
           
           alleles[3] = pAllele[0]
-            
+
           print(ID, chromosome, prot, b, e,\
                 alleles[0], alleles[2], alleles[1], alleles[3],\
                 sep="\t")
