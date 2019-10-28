@@ -5,6 +5,10 @@ The code herein can be used to estimate the [random match probability](https://e
 
 As a refresher, the RMP is used to quantify the rarity of a set of genetic markers. In modern parlance *genetic* is often conflated/equated with/to DNA, but the meaning of genetic instead relates to heredity (this make sense as genetics as a discipline existed long before the discovery of DNA). In fact, some of the earliest studies in (forensic) population genetics did not use DNA markers, but instead were based on allozyme variation. Given this, it is not surprising that peptide markers can be used in forensics, but the *how* is an open question.
 
+## Dependencies:
+- numpy
+- standard python libraries: itertools, namedtuple, defaultdict, random, argparse, os.path, sys, csv, gzip
+
 ## Quick start
 -  Use canned data: bcftools csq run on the [phase 3 1000 genomes](https://www.dropbox.com/s/parobd9n91cktv9/AllProteinCodingConsequences.txt.gz?dl=1) (dropbox link)
 - Individual -> Population lookup table from [phase 3 1000 genomes](DataForPaper/sampsToPops.tsv)
@@ -14,7 +18,7 @@ As a refresher, the RMP is used to quantify the rarity of a set of genetic marke
 - Compute RMPs. Note: Two estimators the RMP are of use: the naive_rmp (no theta correction) and the rmp (theta corrected). The latter is presented "raw", and may exceed 1.0.
 
 Example usage:
-> /usr/bin/python3 ../sapToRmp_ForSponsors.py  -q sampsToPops.tsv -p EachAllele  -c proteinConsequences.1kg.tsv.gz > EachAllele.RMP
+> /usr/bin/python3 ./pRMP.py  -q sampsToPops.tsv -p EachAllele  -c proteinConsequences.1kg.tsv.gz > EachAllele.RMP
 
 
 ## Some methodological considerations
