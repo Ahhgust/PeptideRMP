@@ -6,10 +6,10 @@ The code herein can be used to estimate the [random match probability](https://e
 As a refresher, the RMP is used to quantify the rarity of a set of genetic markers. In modern parlance *genetic* is often conflated/equated with/to DNA, but the meaning of genetic instead relates to heredity (this make sense as genetics as a discipline existed long before the discovery of DNA). In fact, some of the earliest studies in (forensic) population genetics did not use DNA markers, but instead were based on allozyme variation. Given this, it is not surprising that peptide markers can be used in forensics, but the *how* is an open question.
 
 ## Quick start
--  [Use canned data: bcftools csq run on the phase 3 1000 genomes](https://www.dropbox.com/s/parobd9n91cktv9/AllProteinCodingConsequences.txt.gz?dl=1)
+-  Use canned data: bcftools csq run on the [phase 3 1000 genomes](https://www.dropbox.com/s/parobd9n91cktv9/AllProteinCodingConsequences.txt.gz?dl=1) (dropbox link)
 - Download a fasta file of all genes from ensembl: ftp://ftp.ensembl.org/pub/grch37/release-85/fasta/homo_sapiens/pep/Homo_sapiens.GRCh37.pep.all.fa.gz (copy and paste y'all. Ftp hyperlinks don't appear to work)
 - [generate a null distribution of rmps](gvp2null.md)
-
+-- Pay attention to the warning messages! I recommend removing all alleles not detected in the 1KG project
 
 
 To compute RMPs you will need:
