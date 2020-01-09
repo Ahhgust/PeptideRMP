@@ -1,14 +1,4 @@
 #!/usr/bin/python3
-#Copyright 2019 August E. Woerner
-
-#Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-#The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#End license text.
-
-
 # Written by August Woerner
 # This program is designed to take in
 # a peptide alleles, and generate
@@ -33,11 +23,11 @@
 # and paternal (subsequent column) peptide calls under the assumption that all of the genes
 # are turned ON in this individual.
 #
-# Current limitations:
+# CUrrent limitations:
 # ONly autosomal calls are supported
 # Only BCFtools csq is supported
 # Only Ensembl annotations are supported
-# ONLY full digests are supported (partial digests in theory work; largely untested)
+
 
 
 import sys
@@ -492,6 +482,7 @@ def makeLoci(alleles):
     listOfTups.append( tuple( newList ) )
     i = j
 
+  
   return listOfTups
 
 
@@ -735,7 +726,8 @@ def getPeptideHaps(proteinHaps, alleles, refSeq, proteinSeq):
   
   uniqueHaps = {}
 
-  errs = 0
+  uniquify = defaultdict(int)
+  
   for sample, diffs in proteinHaps.items():
 
     locus = []
@@ -757,21 +749,14 @@ def getPeptideHaps(proteinHaps, alleles, refSeq, proteinSeq):
     elif len(matches) == 1:
       allele = matches[0]
     else:
-      errs += 1
-      if errs == 1:
-        print("Should never happen.", sample, "The peptides at locus", alleles[1:] , "are problematic-- alleles within a locus should be mutually exclusive, these are not!E.g.,", haplotype, sep="\n", file=sys.stderr)
-      # called as a null allele...
-      # but added a separate tag
-      badAllele= Allele( alleles[0][0], alleles[0][1], alleles[0][2], "notdistinct", alleles[0][4])
-      allele = badAllele
+      uniquify[haplotype] += 1
+      if uniquify[haplotype] == 1:
+        print("Should never happen.", "The peptides you seek are not distinct!", matches, alleles[1:], haplotype, diffs, sep="\n", file=sys.stderr)
+      allele = alleles[0]
 
     x = alleles[0].protStart
     y = alleles[0].protStop
 
-    # needed when grabbing the first peptide!
-    if x < 1:
-      x = 1
-    
     variant = ""
     if x >= len(hapAsList): # variant is strictly AFTER any sequence in this peptide
       variant = ""
@@ -1071,8 +1056,11 @@ def main(argv):
       marginalAlleleCounts[ a.seq ] = 0
     d[prot] = makeLoci(alleles)
     for loc in d[prot]:
+  #    prevAllele=None
       for allele in loc[1:]: # +1 to put it back into 1-based inclusive indexing (as per the input)
+#        if prevAllele is None or prevAllele.protStop != allele.protStop:
         print(prot, loc[0].protStart, loc[0].protStop, allele.protStart+1, allele.protStop, allele.seq, sep="\t", file=lut)
+ #         prevAllele = allele
 
   lut.close()
   segsiteDict = {}
@@ -1105,7 +1093,6 @@ def main(argv):
   
     if prot in haps:
       for locus in loci:
-        
         refSeq = getRefAllele(locus[0], protSeq, True)
         peptides = getPeptideHaps( haps[prot], locus, refSeq, protSeq)
         refAllele = getConsistentAllele(locus, refSeq)
@@ -1134,14 +1121,14 @@ def main(argv):
             pAllele = peptides[  ID + "_2" ] # and paternal allele
           else:
             pAllele = (refSeq, refAllele)
-            
+
           if pAllele[1].seq == 'null':
             alleles[2] = "nd"
           else:
             alleles[2] = pAllele[1].seq
           
           alleles[3] = pAllele[0]
-
+            
           print(ID, chromosome, prot, b, e,\
                 alleles[0], alleles[2], alleles[1], alleles[3],\
                 sep="\t")
