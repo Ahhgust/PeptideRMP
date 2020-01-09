@@ -1,4 +1,14 @@
 #!/usr/bin/python3
+#Copyright 2019 August E. Woerner
+
+#Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+#The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#End license text.
+
+
 # Written by August Woerner
 # This program is designed to take in
 # a peptide alleles, and generate
@@ -23,11 +33,11 @@
 # and paternal (subsequent column) peptide calls under the assumption that all of the genes
 # are turned ON in this individual.
 #
-# CUrrent limitations:
+# Current limitations:
 # ONly autosomal calls are supported
 # Only BCFtools csq is supported
 # Only Ensembl annotations are supported
-
+# ONLY full digests are supported (partial digests in theory work; largely untested)
 
 
 import sys
@@ -50,6 +60,8 @@ peptideStart = 'start'
 peptideStop = 'end'
 genomeCoordColumn = 'hg38start'
 
+# by default, convert all Isoleucines to leucines
+convertI2L = True
 
 
 # lazy person's objects...
@@ -222,10 +234,11 @@ def isoleucine2leucine(s):
   """
 
   ss = list(s)
-  
-  for i in range(len(ss)):
-    if ss[i] == 'I':
-      ss[i] = 'L'
+
+  if convertI2L:
+    for i in range(len(ss)):
+      if ss[i] == 'I':
+        ss[i] = 'L'
 
   return "".join(ss)
 
@@ -302,7 +315,6 @@ def diffs2seq(diffs, seq, cigar=False):
       break
     # STOP codon...
     if d.toAllele is None:
-     # return (isoleucine2leucine( "".join(newSeq[:x])), newSeq[:x])
       truncateTo = x
       break
     
@@ -316,7 +328,6 @@ def diffs2seq(diffs, seq, cigar=False):
       # deletion wrt reference
       if j < len(d.toAllele):
         if d.toAllele[j] == '*': # end of protein
-          #return (isoleucine2leucine( "".join(newSeq[:i])), newSeq[:i])
           truncateTo = i
           break
           
@@ -413,7 +424,7 @@ def seqToProteome(s):
     c = outList[i]
     if willDigest(c):
       return "".join(outList[:i])
-    elif c == 'I': # leucine and isoleucine are mass-identical. convert!
+    elif convertI2L and c == 'I': # leucine and isoleucine are mass-identical. convert!
       outList[i] = 'L'
       
   return "".join(outList)
@@ -482,7 +493,6 @@ def makeLoci(alleles):
     listOfTups.append( tuple( newList ) )
     i = j
 
-  
   return listOfTups
 
 
@@ -598,7 +608,7 @@ def digest(s, asList=False):
   l = []
 
   for c in s:
-    if c == 'I':
+    if convertI2L and c == 'I':
       l.append("L")
     else:
       l.append(c)
@@ -726,8 +736,7 @@ def getPeptideHaps(proteinHaps, alleles, refSeq, proteinSeq):
   
   uniqueHaps = {}
 
-  uniquify = defaultdict(int)
-  
+  errs = 0
   for sample, diffs in proteinHaps.items():
 
     locus = []
@@ -749,14 +758,21 @@ def getPeptideHaps(proteinHaps, alleles, refSeq, proteinSeq):
     elif len(matches) == 1:
       allele = matches[0]
     else:
-      uniquify[haplotype] += 1
-      if uniquify[haplotype] == 1:
-        print("Should never happen.", "The peptides you seek are not distinct!", matches, alleles[1:], haplotype, diffs, sep="\n", file=sys.stderr)
-      allele = alleles[0]
+      errs += 1
+      if errs == 1:
+        print("Should never happen.", sample, "The peptides at locus", alleles[1:] , "are problematic-- alleles within a locus should be mutually exclusive, these are not!E.g.,", haplotype, sep="\n", file=sys.stderr)
+      # called as a null allele...
+      # but added a separate tag
+      badAllele= Allele( alleles[0][0], alleles[0][1], alleles[0][2], "notdistinct", alleles[0][4])
+      allele = badAllele
 
     x = alleles[0].protStart
     y = alleles[0].protStop
 
+    # needed when grabbing the first peptide!
+    if x < 1:
+      x = 1
+    
     variant = ""
     if x >= len(hapAsList): # variant is strictly AFTER any sequence in this peptide
       variant = ""
@@ -872,17 +888,37 @@ def getPreviousMatchlen(cigarOps, currOffset):
 
   
 
-def dumpProts(protFile, consequencesFile):
+def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
+  """
+  This takes in the reference form of each protein (protFile)
+  and the consequence predictions from bcftools csq (consequencesFile)
+  and prints the fasta sequence of each protein 
+  Alternatively,
+  you can restrict things to just a single (diploid) individual
+  (restrictTo == theirId)
+  The last option will make 1 or 2 protein haplotypes for each protein
+  """
 
-  
   (seqsDict, trans2prot, prot2trans) = getDictOfSeqs(protFile, None)
   (haps, ids) = getHaplotypes(seqsDict, trans2prot, consequencesFile)
 
-  fh = gzip.open("dumpLUT.tsv.gz", "wt")
-  fh.write("ProteinID\tSampleID\tCigar\n")
+  if restrictTo == "":
+    if dumpFile.endswith("gz") == False:
+      dumpFile += ".gz"
+      
+    fh = gzip.open(dumpFile, "wt")
+    fh.write("ProteinID\tSampleID\tCigar\n")
+  elif restrictTo not in ids:
+    print("ID: " , restrictTo , "not found. I'm guessing you mis-typed their name?", file=sys.stderr, sep="\n")
+    print(ids)
+    sys.exit(1)
+  else:
+    ids = [restrictTo]
+    dumpFile = restrictTo + ".LUT.gz"
+    fh = gzip.open(dumpFile, "wt")
+    fh.write("ProteinID\tSampleID\tCigar\n")
 
   
-    
   for protID, refSeq in seqsDict.items():
 
     refSeq = isoleucine2leucine(refSeq)
@@ -895,6 +931,7 @@ def dumpProts(protFile, consequencesFile):
     if protID in haps:
       protHaps = haps[ protID ]
       for who in ids:
+
         who_1 = who + "_1"
         who_2 = who + "_2"
         
@@ -902,8 +939,6 @@ def dumpProts(protFile, consequencesFile):
           diffs = protHaps[who_1]
           (seq, listy, ciggy) = diffs2seq( diffs , refSeq, cigar=True)
         else:
-          #seq = refSeq
-          #ciggy = [ CigarOp("M", len(seq)) ]
           (seq, listy, ciggy) = diffs2seq( [] , refSeq, cigar=True)
           
         # re-add the stop-codons back in.
@@ -953,12 +988,29 @@ def dumpProts(protFile, consequencesFile):
       if seq == "":
         continue
       i += 1
-      print(">", protID , "_" , i, sep="")
+      if restrictTo == "":
+        print(">", protID , "_" , i, sep="")
+      elif len(whos) == 1: # just a maternal or paternal
+        print(">", protID , "_" , whos[0][0], sep="")
+      elif len(whos) == 2: # both maternal and paternal chromosomes are the same... report just 1 ID
+        print(">", protID , "_" , restrictTo, sep="")
+      else:
+        print("Can never happen. More than two proteins found for ID : ", restrictTo, whos, protID, sep="\n", file=sys.stderr)
+        sys.exit(1)
+        
       print(seq)
       
-      for who in whos:
-        fh.write(protID + "_" + str(i) + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\n")
 
+      for who in whos:
+        # keep the original naming
+        if restrictTo == "":
+          fh.write(protID + "_" + str(i) + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\n")
+        else: # embed the individual-specific naming into the LUT
+          if len(whos) == 1: 
+            fh.write(protID + "_" + whos[0][0] + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\n")
+          else:
+            fh.write(protID + "_" + restrictTo + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\n")
+            
   fh.close()
 
   
@@ -971,24 +1023,29 @@ def main(argv):
   parser.add_argument('-p', '--protein_references', dest='P', help="A \"pep\" file from Ensembl. e.g., \"Homo_sapiens.GRCh37.pep.all.fa.gz\". Must correspond to -c (as in the Ensembl protein coordinates must correspond to the consequences file!) ", type=str, default="Homo_sapiens.GRCh37.pep.all.fa.gz")
   parser.add_argument('-i', '--ignore_gvps', dest='I', help="A comma separated list of GVP *alleles* that are to be ignored/dropped/omitted from the output", type=str, default="")
   parser.add_argument('-l', '--lut', dest='L', help="The lookup table to convert the coordinates of the allele(s) to that of the locus", type=str, default="peptideLUT.tsv")
-  parser.add_argument('-d', '--dump', dest='D', help="Ignores the gvp_panel and just dumps the fasta sequence of each haploid individual", action='store_true', default=False)
-
+  parser.add_argument('-d', '--dump', dest='D', help="Ignores the gvp_panel and just dumps the fasta sequence of each haploid individual", type=str, default="")
+  parser.add_argument('-k', '--keep_equivalent', dest='K', help="Keeps mass-equivalent amino acids. By default all I are converted to L; use this flag to turn off this behavior", default=False, action='store_true')
+  parser.add_argument('-j', '--dump_just', dest='J', help="Ignores the gvp_panel and just dumps the fasta sequences of JUST the given individual", type=str, default="")
   
   results = parser.parse_known_args(argv[1:])[0]
   args = parser.parse_known_args(argv[1:])[1]
   if args:
     print("Extra arguments detected", args , sep="\n", file=sys.stderr)
+    parser.print_help()
     return 1
   
   gvpPanelFile = results.G
   csqFile = results.C
   protFile = results.P
+
+  if results.K:
+    global convertI2L
+    convertI2L=False # reset the global variable to keep the Isoleucines as is...
   
   ignoredAlleles = {}
   for al in results.I.split(","):
     ignoredAlleles[al] = 0
 
-  
   # associate each protein (ENSP*)
   # with its associated GVP alleles
   d = defaultdict(list)
@@ -996,9 +1053,17 @@ def main(argv):
   # protein name -> chromosome
   prot2chrom = {}
 
-  if results.D:
-    dumpProts(protFile, csqFile)
+  if results.J != "":
+    dumpProts(protFile, csqFile, "", results.J)
     return 0
+  if results.D != "":
+    dumpProts(protFile, csqFile, results.D)
+    return 0
+
+  if not os.path.isfile(gvpPanelFile):
+    print("", "I need a panel file, but:", gvpPanelFile , "is not a file on this computer. Please specify it (-g gvp_panel)!", "", file=sys.stderr, sep="\n")
+    parser.print_help()
+    return 1
   
   with open(gvpPanelFile, 'r') as gvps:
     reader = csv.DictReader(gvps, delimiter="\t")
@@ -1056,11 +1121,8 @@ def main(argv):
       marginalAlleleCounts[ a.seq ] = 0
     d[prot] = makeLoci(alleles)
     for loc in d[prot]:
-  #    prevAllele=None
       for allele in loc[1:]: # +1 to put it back into 1-based inclusive indexing (as per the input)
-#        if prevAllele is None or prevAllele.protStop != allele.protStop:
         print(prot, loc[0].protStart, loc[0].protStop, allele.protStart+1, allele.protStop, allele.seq, sep="\t", file=lut)
- #         prevAllele = allele
 
   lut.close()
   segsiteDict = {}
@@ -1093,6 +1155,7 @@ def main(argv):
   
     if prot in haps:
       for locus in loci:
+        
         refSeq = getRefAllele(locus[0], protSeq, True)
         peptides = getPeptideHaps( haps[prot], locus, refSeq, protSeq)
         refAllele = getConsistentAllele(locus, refSeq)
@@ -1121,14 +1184,14 @@ def main(argv):
             pAllele = peptides[  ID + "_2" ] # and paternal allele
           else:
             pAllele = (refSeq, refAllele)
-
+            
           if pAllele[1].seq == 'null':
             alleles[2] = "nd"
           else:
             alleles[2] = pAllele[1].seq
           
           alleles[3] = pAllele[0]
-            
+
           print(ID, chromosome, prot, b, e,\
                 alleles[0], alleles[2], alleles[1], alleles[3],\
                 sep="\t")
