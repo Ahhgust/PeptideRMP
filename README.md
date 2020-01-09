@@ -7,7 +7,7 @@ As a refresher, the RMP is used to quantify the rarity of a set of genetic marke
 
 ## Quick start
 -  Use canned data: bcftools csq run on the [phase 3 1000 genomes](https://www.dropbox.com/s/parobd9n91cktv9/AllProteinCodingConsequences.txt.gz?dl=1) (dropbox link)
-- Individual -> Population lookup table from [phase 3 1000 genomes](DataForPaper/sampsToPops.tsv)
+- Individual -> Population lookup table from [phase 3 1000 genomes](DataForPaper/sampsToPops.tsv). See also AFR.tsv, AMR.tsv, EAS.tssv, EUR.tsv, SAS.tsv for the major super-populations from the 1000 Genomes project as defined [here](https://www.internationalgenome.org/category/population/)
 - Download a fasta file of all genes from ensembl: ftp://ftp.ensembl.org/pub/grch37/release-85/fasta/homo_sapiens/pep/Homo_sapiens.GRCh37.pep.all.fa.gz (copy and paste y'all. Ftp hyperlinks don't appear to work)
 - [generate a null distribution of rmps](gvp2null.md)
  *Pay attention to the warning messages! I recommend removing all alleles not detected in the 1KG project*
