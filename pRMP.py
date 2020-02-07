@@ -317,7 +317,7 @@ def organizeProt(proteomeHitsFile, mode=NUCLEIC_ACID, protLUTFile=None, autosome
           if not gotIt:
             alleles = prots[ID][coord].append(allele)
 
-  return prots
+  return (prots, expectedPeps)
 
 def marginalRMP(a1, a2, theta=0.03):
   """
@@ -479,7 +479,7 @@ def makeHaploidDiploid(d):
   return out
 
 
-def loadGenotypes(filename, siteList, samps2pops, haploid=True, space=NUCLEIC_ACID):
+def loadGenotypes(filename, siteList, samps2pops, haploid=True, space=NUCLEIC_ACID, protmapping=None):
   """
   This parses a VCF/bcftools csq file (converted to tabular form)
   and extracts the genotypes from it that correspond to 
@@ -490,6 +490,7 @@ def loadGenotypes(filename, siteList, samps2pops, haploid=True, space=NUCLEIC_AC
   to their diploid genotypes (tuple)
   """
 
+  
   if filename.endswith('gz'):
     fh = gzip.open(filename, "rt")
   else:
@@ -528,14 +529,22 @@ def loadGenotypes(filename, siteList, samps2pops, haploid=True, space=NUCLEIC_AC
 
       if row["ID"] not in samps2pops:
         continue
-      
+
       # some chromosomes are encoded with leading 0s... no fun. (e.g., 05 instead of 5)
       if row["Chromosome"].startswith("0"):
         row["Chromosome"] = row["Chromosome"][1:]
-  
 
+      #TODO: This is wrong! the non-detects are not treated correctly...
+      # this cleans up the idea of a protein coordinate (solely a function of the LUT now. was defined from the 1000 genomes data genotypes before...)
+      #if row["DetectableAllele1"] in protmapping:
+       # coord = GenomeCoordinate(row["Chromosome"], None, int(protmapping[ row["DetectableAllele1"] ][1]), \
+          #                       int(protmapping[ row["DetectableAllele1"] ][2]), row["ProteinID"])
+      #elif row["DetectableAllele2"] in protmapping:
+       # coord = GenomeCoordinate(row["Chromosome"], None, int(protmapping[ row["DetectableAllele2"] ][1]), \
+           #                      int(protmapping[ row["DetectableAllele2"] ][2]), row["ProteinID"])
+      #else:
       coord = GenomeCoordinate(row["Chromosome"], None, row["ProteinStart"], row["ProteinStop"], row["ProteinID"])
-      
+        
       if coord in siteList:
         if coord not in dictOfDicts:
           genotypes = {}
@@ -552,7 +561,6 @@ def loadGenotypes(filename, siteList, samps2pops, haploid=True, space=NUCLEIC_AC
           
 
   fh.close()
-
 
   # make a synthetic diploid dataset from all pairs of haploid datasets
   if haploid:
@@ -678,7 +686,7 @@ def computeTheta(referenceGenotypes, coordinates, pops2samps, haploid2diploid=Tr
   return max(Bw, ALT_MIN_THETA)
 
     
-def getLogRmp(referenceGenotypes, originalCoordinatesToUse, diploidIndividuals, originalProteome, samps2pops, pops2samps, falsePositiveRate=0.01, numIters=1000):
+def getLogRmp(referenceGenotypes, originalCoordinatesToUse, diploidIndividuals, originalProteome, samps2pops, pops2samps, falsePositiveRate=0.01, numIters=1000, skipTheta=False):
   """
   This is the meat and potatoes of the RMP calculation. The interface is clunky
   I use a Monte Carlo estimate (numIter estimates of the RMP) and return the mean
@@ -713,8 +721,11 @@ def getLogRmp(referenceGenotypes, originalCoordinatesToUse, diploidIndividuals, 
     else:
       nTot += 2
 
-  
-  theta = computeTheta(referenceGenotypes, originalCoordinatesToUse, pops2samps)
+  if skipTheta:
+    theta=0
+  else:
+    theta = computeTheta(referenceGenotypes, originalCoordinatesToUse, pops2samps)
+    
   # the RMPs based on imputation
   rmps = numpy.zeros(numIters)
   # and the RMPs based on the evidence
@@ -844,8 +855,11 @@ def getLogRmpExact(referenceGenotypes, coordinatesToUse, diploidIndividuals, pro
     haploidIDs.add(thisPair[1])
     
     for c in coordinatesToUse:
+
+      
       if dip not in referenceGenotypes[c]:
         print("Should not be!", c, dip, sep="\n", file=sys.stderr)
+        print(len(referenceGenotypes[c]))
         sys.exit()
         
       (a1,a2) = referenceGenotypes[c][dip]
@@ -1063,14 +1077,16 @@ if __name__ == "__main__":
 
   parser = argparse.ArgumentParser(description="Let's compute some RMPs!\n" + exampleUsage)
 
-  parser.add_argument('-r', '--reference_genotypes', dest='R', help="This is a *tsv* file (from vcf2table.py) of phased genotypes (nucleic acid space).", type=str, default='')
+  parser.add_argument('-r', '--reference_genotypes',    dest='R', help="This is a *tsv* file (from vcf2table.py) of phased genotypes (nucleic acid space).", type=str, default='')
   parser.add_argument('-c', '--reference_consequences', dest='C', help="This is a *tsv* file (from gvp2null.py) of phased peptide consequences (protein space).", type=str, default='')
-  parser.add_argument('-p', '--peptide_hits', dest='P', help="This is a file of peptides detected augmented with their expected alleles in the nucleic acid space", type=str, default='')
-  parser.add_argument('-q', '--population_to_samples', dest='Q', help="This is a file gives the population IDs of each sample specified in the file R", type=str, default="sampsToPops.tsv")
-  parser.add_argument('-s', '--sample', dest='S', help="This restrains the analysis to just the sample id S", type=str, default='')
-  parser.add_argument('-S', '--seed', dest='D', help="This sets the seed on the random number generator; helps with reproducibility", type=int, default=1)
-  parser.add_argument('-l', '--peptide_lut', dest='L', help="A lookup-table to give to relate alleles to loci in peptide coordinates", type=str, default="peptideLUT.tsv")
-  parser.add_argument('-e', '--error_rate', dest='E', help="Error rate(s) (i.e., drop-in rates) used in the RMP calculation.",type=float, default=[0, 0.01, 0.02, 0.03, 0.04, 0.05], nargs="+")
+  parser.add_argument('-p', '--peptide_hits',           dest='P', help="This is a file of peptides detected augmented with their expected alleles in the nucleic acid space", type=str, default='')
+  parser.add_argument('-q', '--population_to_samples',  dest='Q', help="This is a file gives the population IDs of each sample specified in the file R", type=str, default="sampsToPops.tsv")
+  parser.add_argument('-s', '--sample',                 dest='S', help="This restrains the analysis to just the sample id S", type=str, default='')
+  parser.add_argument('-S', '--seed',                   dest='D', help="This sets the seed on the random number generator; helps with reproducibility", type=int, default=1)
+  parser.add_argument('-l', '--peptide_lut',            dest='L', help="A lookup-table to give to relate alleles to loci in peptide coordinates", type=str, default="peptideLUT.tsv")
+  parser.add_argument('-e', '--error_rate',             dest='E', help="Error rate(s) (i.e., drop-in rates) used in the RMP calculation.",type=float, default=[0, 0.01, 0.02, 0.03, 0.04, 0.05], nargs="+")
+  parser.add_argument('-n', '--no_theta',               dest='N', help="Turns off the theta computation (theta=0)", action="store_true")
+  parser.add_argument('-i', '--iterations',             dest='I', help="The number of Monte Carlo *I*terations", type=int, default=1000)
   
   results = parser.parse_known_args(sys.argv[1:])[0]
   args = parser.parse_known_args(sys.argv[1:])[1]
@@ -1078,13 +1094,20 @@ if __name__ == "__main__":
   genotypeTableFile = results.R
   peptideTableFile = results.C
 
+  if results.I < 0:
+    print("\nYou specified a negative number of Monte Carlo simulations... That's not good!\n\n", file=sys.stderr)
+    parser.print_help()
+    sys.exit(1)
+  
   errs = results.E
 
   if min(errs) < 0:
     print("Problem with error rates... at least one is negative", errs, sep="\n", file=sys.stderr)
+    parser.print_help()
     sys.exit(1)
   if (max(errs) > 1):
     print("Problem with error rates... at least one is more than 1", errs, sep="\n", file=sys.stderr)
+    parser.print_help()
     sys.exit(1)
   
   if os.path.isfile(genotypeTableFile) and os.path.isfile(peptideTableFile):
@@ -1112,10 +1135,10 @@ if __name__ == "__main__":
     parser.print_help()
     sys.exit(1)
 
-  prots = organizeProt( proteomeHitsFile, mode, results.L)
+  (prots, protmapping) = organizeProt( proteomeHitsFile, mode, results.L)
   
   samples = sorted(prots.keys() )
-  
+
   sampsToPopsFile = results.Q
   if not os.path.isfile(sampsToPopsFile):
     print("There is no file: " , sampsToPopsFile , file=sys.stderr, sep="\n")
@@ -1123,7 +1146,7 @@ if __name__ == "__main__":
     sys.exit(1)
 
   (samps2pops, pops2samps) = parseSamps2Pops(sampsToPopsFile, "Individual ID", "Population")
-  
+
   if results.S != "":
     if results.S not in prots:
       print("There is no sample id:", results.S, file=sys.stderr, sep="\n", end="\n\n")
@@ -1140,11 +1163,11 @@ if __name__ == "__main__":
   
   for sampleID in samples: # look at each sample's proteome hits
     d = prots[sampleID]
-
+    
     if mode == NUCLEIC_ACID:
       gts = loadGenotypes(genotypeTableFile, d, samps2pops, True) # and load genotypes (Haploid==True) from the 1000 genomes project
     else:
-      gts = loadGenotypes(peptideTableFile, d, samps2pops, True, PROTEIN) # and load genotypes (Haploid==True) from the 1000 genomes project
+      gts = loadGenotypes(peptideTableFile, d, samps2pops, True, PROTEIN, protmapping) # and load genotypes (Haploid==True) from the 1000 genomes project
 
     chromosomes = defaultdict(set)
     ids = set()
@@ -1160,7 +1183,7 @@ if __name__ == "__main__":
     chroms = sorted(chromosomes.keys())
     for chrom, markers in chromosomes.items():
       for err in errs:
-        logRMP = getLogRmp(gts, markers, ids, d, samps2pops, pops2samps, err)
+        logRMP = getLogRmp(gts, markers, ids, d, samps2pops, pops2samps, err, numIters=results.I, skipTheta=results.N)
       
         print(sampleID, chrom, exp(logRMP[0]), logRMP[1], logRMP[2], exp(logRMP[3]), exp(logRMP[4]), err, sep="\t")
 
