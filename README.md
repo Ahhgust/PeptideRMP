@@ -48,3 +48,9 @@ Further, alleles between chromosomes are assumed to be independent and alleles w
 # In practice
 
 The chromosomes used for comparison in practice come from the [1000 genomes project](https://www.internationalgenome.org/category/vcf/). The haploid chromosomes characterized by the project are then converted into proteins using [bcftools csq](https://samtools.github.io/bcftools/bcftools.html#csq) and all pairs of haploid chromosomes are used in the assessment of the RMP. F<sub>ST</sub> is estimated within European populations as found in the 1000 genomes project. 
+
+# Funding
+
+This research is based upon work supported in part by the Office of the Director of National Intelligence (ODNI), Intelligence Advanced Research Projects Activity (IARPA), via contract number 2018-18041000003. The views and conclusions contained herein are those of the authors and should not be interpreted as necessarily representing the official policies, either expressed or implied, of ODNI, IARPA, or the U.S. Government. The U.S. Government is authorized to reproduce and distribute reprints for governmental purposes notwithstanding any copyright annotation therein.
+
+
