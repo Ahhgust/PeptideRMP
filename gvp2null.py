@@ -66,7 +66,7 @@ convertI2L = True
 
 # lazy person's objects...
 Allele = namedtuple('Allele', ['ID', 'protStart', 'protStop', 'seq', 'originalSeq'])
-Variant = namedtuple("Variant", ['fromAllele', 'fromPos', 'toAllele', 'toPos'])
+Variant = namedtuple("Variant", ['fromAllele', 'fromPos', 'toAllele', 'toPos', 'extra'])
 
 
 CigarOp = namedtuple("CigarOp", ["op", "size"])
@@ -94,7 +94,7 @@ def getPair(v):
   return(num, v[i:])
 
 
-def parseVariant(s):
+def parseVariant(s, extra=""):
   '''
   This parses a variation column from bcftools csq
   eg, 9338V>9338T or
@@ -119,12 +119,26 @@ def parseVariant(s):
   #  return Variant(fromVar, fromPos-1, toVar, toPos)
   diffLen = len(fromVar) - len(toVar)
   if diffLen > 0:
-    return Variant(fromVar, fromPos-1, toVar, fromPos + diffLen)
+    return Variant(fromVar, fromPos-1, toVar, fromPos + diffLen, extra)
 
-  return Variant(fromVar, fromPos-1, toVar, fromPos)
+  return Variant(fromVar, fromPos-1, toVar, fromPos, extra)
+
+def variant2str(v, sep=';'):
+  """
+  Friendly string-encoding of a Variant named tuple
+  """
+  if isinstance(v, Variant):
+    if v.extra=="":
+      return str(v.fromPos) + "-" + str(v.toPos) + v.fromAllele + ">" + v.toAllele
+    return str(v.fromPos) + "-" + str(v.toPos) + v.fromAllele + ">" + v.toAllele + ":" + v.extra
   
+  out = []
+  for var in v:
+    out.append( variant2str(var) )
 
-def getHaplotypes(seqsDict, trans2prot, consequencesFileOrGlob):
+  return sep.join(out)
+
+def getHaplotypes(seqsDict, trans2prot, consequencesFileOrGlob, addGenomeAnnos=False):
   """
   This parses the results of bcftools csq 
   (consequences file)
@@ -172,7 +186,11 @@ def getHaplotypes(seqsDict, trans2prot, consequencesFileOrGlob):
       
         prot = trans2prot[transcript]
         who = s[1] + "_" + s[2] # sampleID _ chromosome (maternal or paternal)
-        what = parseVariant(geneInfo[5])
+        if addGenomeAnnos:
+          what = parseVariant(geneInfo[5], geneInfo[6]) #adds in the genome SNP call (string)
+        else:
+          what = parseVariant(geneInfo[5])
+
 
         if geneInfo[0] == 'frameshift' and geneInfo[5][-1] != '*':
           geneInfo[5] += "*" # concatenate a separate *, indicating that the protein is "done"
@@ -900,14 +918,14 @@ def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
   """
 
   (seqsDict, trans2prot, prot2trans) = getDictOfSeqs(protFile, None)
-  (haps, ids) = getHaplotypes(seqsDict, trans2prot, consequencesFile)
+  (haps, ids) = getHaplotypes(seqsDict, trans2prot, consequencesFile, addGenomeAnnos=True)
 
   if restrictTo == "":
     if dumpFile.endswith("gz") == False:
       dumpFile += ".gz"
       
     fh = gzip.open(dumpFile, "wt")
-    fh.write("ProteinID\tSampleID\tCigar\n")
+    fh.write("ProteinID\tSampleID\tCigar\tSeqDiffs\n")
   elif restrictTo not in ids:
     print("ID: " , restrictTo , "not found. I'm guessing you mis-typed their name?", file=sys.stderr, sep="\n")
     print(ids)
@@ -916,7 +934,7 @@ def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
     ids = [restrictTo]
     dumpFile = restrictTo + ".LUT.gz"
     fh = gzip.open(dumpFile, "wt")
-    fh.write("ProteinID\tSampleID\tCigar\n")
+    fh.write("ProteinID\tSampleID\tCigar\tSeqDiffs\n")
 
   
   for protID, refSeq in seqsDict.items():
@@ -926,7 +944,7 @@ def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
     # associate a protein haplotype with who has it
     proteinHaplotypes = defaultdict(list)
     # and a protein haplotype with the difference encoding
-    proteinDiffs = dict()
+    proteinDiffs = defaultdict(set)
 
     if protID in haps:
       protHaps = haps[ protID ]
@@ -938,6 +956,7 @@ def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
         if who_1 in protHaps:
           diffs = protHaps[who_1]
           (seq, listy, ciggy) = diffs2seq( diffs , refSeq, cigar=True)
+          proteinDiffs[seq].add( variant2str(diffs) )
         else:
           (seq, listy, ciggy) = diffs2seq( [] , refSeq, cigar=True)
           
@@ -956,8 +975,10 @@ def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
         # and repeat for the second allele...
         if who_2 in protHaps:
           diffs = protHaps[who_2]
-          (seq, listy, ciggy) = diffs2seq( diffs , refSeq, cigar=True)
           
+          (seq, listy, ciggy) = diffs2seq( diffs , refSeq, cigar=True)
+          proteinDiffs[seq].add( variant2str(diffs) )
+
         else:
           #seq = refSeq
           #ciggy = [ CigarOp("M", len(seq)) ]
@@ -1004,12 +1025,12 @@ def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
       for who in whos:
         # keep the original naming
         if restrictTo == "":
-          fh.write(protID + "_" + str(i) + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\n")
+          fh.write(protID + "_" + str(i) + "\t" + who[0] + "\t" + cigarops2string(who[1]) + "\t" + ",".join(proteinDiffs[seq]) +  "\n")
         else: # embed the individual-specific naming into the LUT
           if len(whos) == 1: 
-            fh.write(protID + "_" + whos[0][0] + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\n")
+            fh.write(protID + "_" + whos[0][0] + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\t" + ",".join(proteinDiffs[seq]) +  "\n")
           else:
-            fh.write(protID + "_" + restrictTo + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\n")
+            fh.write(protID + "_" + restrictTo + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\t" + ",".join(proteinDiffs[seq]) +  "\n")
             
   fh.close()
 
