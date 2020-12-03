@@ -350,7 +350,20 @@ def diffs2seq(diffs, seq, cigar=False):
           break
           
         if i < len(newSeq):
-          newSeq[i] = d.toAllele[j]
+          # common case; previous
+          # nonoverlapping variants or overlapping and non-conflicting variants (len==1)
+          # or conflicting (base is deleted by one op; next op says it's not)
+          if len(newSeq[i])< 2:
+            newSeq[i] = d.toAllele[j]
+          else:
+            # case of overlapping insertions (in the amino acid space, not nucleic acid space).
+            # eg, 2-3 = FG->FCG
+            #     3-4=  GH->GAA
+            # want FGH -> ACGAA
+
+            #            print("Found..." , diffs, truncateTo, newAllele, sep="\n", file=sys.stderr)
+            
+            newSeq[i] = newSeq[i][:-1] + d.toAllele[j] # overstrike the last character in the multi-base allele at this index...
         else:
           y = i
           break # cause the if statement to treat this as a concatenation...
@@ -571,7 +584,13 @@ def getDictOfSeqs(protFilename, protDict):
         print("Shouldn't happen: " , sep, file=sys.stderr, sep="\n")
 
     else:
-      seq += s.rstrip()
+      # noncanonical/X amino acid starts are NOT considered as part
+      # of the coordinate system with bcftools csq.
+
+      if s[0] == 'X':
+        seq += s[1:].rstrip()
+      else:
+        seq += s.rstrip()
       
 
   f.close()
