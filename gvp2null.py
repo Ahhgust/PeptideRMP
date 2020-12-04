@@ -317,7 +317,8 @@ def diffs2seq(diffs, seq, cigar=False):
       if newSeq[i] == '*':
         truncateTo = i
         break
-  
+
+      
   for d in diffs:
 
     # coordinates wrt to the reference sequence
@@ -347,6 +348,14 @@ def diffs2seq(diffs, seq, cigar=False):
       if j < len(d.toAllele):
         if d.toAllele[j] == '*': # end of protein
           truncateTo = i
+
+          # exotic case; insertion overlapping with a premature stop codon.
+          # this means that index i has the previous inserted allele call.
+          # if this same index is said to be a stop-gain
+          # let's call the inserted allele correct and terminate just after
+          if i < len(newSeq) and len(newSeq[i]) > 1:
+            truncateTo=i+1
+            
           break
           
         if i < len(newSeq):
@@ -423,7 +432,7 @@ def diffs2seq(diffs, seq, cigar=False):
     cigarOps.append( CigarOp('D', terminalDel) )
 
   if not validateCigar(cigarOps, i2l):
-    print(diffs, truncateTo, newAllele, sep="\n", file=sys.stderr)
+    print(diffs, truncateTo, newAllele, newSeq, seq, sep="\n", file=sys.stderr)
     exit(1)
 
     
