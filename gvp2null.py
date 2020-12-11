@@ -417,11 +417,18 @@ def diffs2seq(diffs, seq, cigar=False):
         newSeq[y-1] += newAllele
         numInserted = cigarOps[-1].size
 
+        
+  for i in range(len(newSeq)):
+    if newSeq[i] == '*':
+      truncateTo = i
+      break
+    
   terminalDel = 0
   if truncateTo >= 0:
     terminalDel = len(newSeq) - truncateTo # only works b/c no nucletides have been inserted/deleted in the sequence AFTER the truncation
     newSeq = newSeq[ : truncateTo ] 
 
+    
   i2l = isoleucine2leucine("".join(newSeq) )
   nMatches = getPreviousMatchlen(cigarOps, len(i2l))
 
@@ -438,6 +445,7 @@ def diffs2seq(diffs, seq, cigar=False):
     
   if cigar:
     return (i2l, newSeq, cigarOps)
+  
   return (i2l, newSeq)
 
 
@@ -984,7 +992,7 @@ def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
         if who_1 in protHaps:
           diffs = protHaps[who_1]
           (seq, listy, ciggy) = diffs2seq( diffs , refSeq, cigar=True)
-          proteinDiffs[seq].add( variant2str(diffs) )
+          proteinDiffs[ (seq, who_1) ].add( variant2str(diffs) )
         else:
           (seq, listy, ciggy) = diffs2seq( [] , refSeq, cigar=True)
           
@@ -998,14 +1006,12 @@ def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
           ciggy = [ CigarOp("M", offset) ]
           proteinHaplotypes[seq[ : offset ] ].append( (who_1, ciggy) )
 
-
-        
         # and repeat for the second allele...
         if who_2 in protHaps:
           diffs = protHaps[who_2]
           
           (seq, listy, ciggy) = diffs2seq( diffs , refSeq, cigar=True)
-          proteinDiffs[seq].add( variant2str(diffs) )
+          proteinDiffs[(seq, who_2) ].add( variant2str(diffs) )
 
         else:
           #seq = refSeq
@@ -1053,12 +1059,12 @@ def dumpProts(protFile, consequencesFile, dumpFile, restrictTo=""):
       for who in whos:
         # keep the original naming
         if restrictTo == "":
-          fh.write(protID + "_" + str(i) + "\t" + who[0] + "\t" + cigarops2string(who[1]) + "\t" + ",".join(proteinDiffs[seq]) +  "\n")
+          fh.write(protID + "_" + str(i) + "\t" + who[0] + "\t" + cigarops2string(who[1]) + "\t" + ",".join(proteinDiffs[(seq, who[0])]) +  "\n")
         else: # embed the individual-specific naming into the LUT
           if len(whos) == 1: 
-            fh.write(protID + "_" + whos[0][0] + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\t" + ",".join(proteinDiffs[seq]) +  "\n")
+            fh.write(protID + "_" + whos[0][0] + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\t" + ",".join(proteinDiffs[(seq, who[0])]) +  "\n")
           else:
-            fh.write(protID + "_" + restrictTo + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\t" + ",".join(proteinDiffs[seq]) +  "\n")
+            fh.write(protID + "_" + restrictTo + "\t" + who[0] + "\t" + cigarops2string(who[1]) +  "\t" + ",".join(proteinDiffs[(seq, who[0])]) +  "\n")
             
   fh.close()
 
